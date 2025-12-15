@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cat CRUD Gallery</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f9;
+      }
+      .container {
+        max-width: 1200px;
+        margin: auto;
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 20px 0;
+      }
+      .cat-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .cat-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+      }
+      .cat-info {
+        padding: 15px;
+      }
+      .cat-info h3 {
+        margin-top: 0;
+        color: #5a189a; /* Purple color */
+      }
+      .cat-info p {
+        margin: 5px 0;
+        font-size: 0.9em;
+      }
+      .actions button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 5px;
+        font-weight: bold;
+      }
+      .actions .edit-btn {
+        background-color: #fca311;
+        color: white;
+      }
+      .actions .delete-btn {
+        background-color: #e5383b;
+        color: white;
+      }
+      .actions .save-btn {
+        background-color: #4a804a;
+        color: white;
+      }
+      .actions .cancel-btn {
+        background-color: #8d99ae;
+        color: white;
+      }
+      .add-cat-form,
+      .edit-form {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        margin-bottom: 20px;
+      }
+      .add-cat-form input,
+      .edit-form input {
+        padding: 10px;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        flex-grow: 1;
+      }
+      .add-cat-form button {
+        background-color: #1a73e8;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      /* Search and Filter Styles */
+      .search-filter-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        margin-bottom: 25px;
+      }
+      .search-filter-container h3 {
+        color: white;
+        margin: 0 0 15px 0;
+        font-size: 1.2em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .search-filter-wrapper {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .search-box {
+        flex: 2;
+        min-width: 200px;
+        position: relative;
+      }
+      .search-box input {
+        width: 100%;
+        padding: 14px 20px 14px 45px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1em;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      }
+      .search-box input:focus {
+        outline: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+      }
+      .search-box::before {
+        content: "🔍";
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.1em;
+        z-index: 1;
+      }
+      .filter-box {
+        flex: 1;
+        min-width: 150px;
+      }
+      .filter-box select {
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1em;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 20px center;
+      }
+      .filter-box select:focus {
+        outline: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+      }
+      .clear-filters-btn {
+        padding: 14px 25px;
+        border: 2px solid white;
+        border-radius: 50px;
+        background: transparent;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .clear-filters-btn:hover {
+        background: white;
+        color: #667eea;
+      }
+      .results-count {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.9em;
+        margin-top: 12px;
+        padding-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cat Gallery (CRUD Demo)</h1>
+
+      <div class="add-cat-form" id="add-form-container">
+        <h3 id="form-title">Add New Cat</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <input type="hidden" id="edit_cat_id" value="" />
+          <input type="text" id="new_type_name" placeholder="Type/Breed" />
+          <input type="text" id="new_color" placeholder="Color" />
+          <input type="text" id="new_image_url" placeholder="Image URL" />
+          <button id="form-submit-btn" onclick="handleFormSubmit()">
+            Add Cat
+          </button>
+          <button
+            id="cancel-edit-btn"
+            class="cancel-btn"
+            onclick="cancelEdit()"
+            style="
+              display: none;
+              background-color: #8d99ae;
+              color: white;
+              padding: 10px 15px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Search and Filter Section -->
+      <div class="search-filter-container">
+        <h3>🔎 Search & Filter Cats</h3>
+        <div class="search-filter-wrapper">
+          <div class="search-box">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search by name or breed..."
+              oninput="applyFilters()"
+            />
+          </div>
+          <div class="filter-box">
+            <select id="color-filter" onchange="applyFilters()">
+              <option value="">All Colors</option>
+            </select>
+          </div>
+          <button class="clear-filters-btn" onclick="clearFilters()">
+            Clear Filters
+          </button>
+        </div>
+        <div class="results-count" id="results-count"></div>
+      </div>
+
+      <div class="gallery" id="cat-gallery">
+        <h2>Loading Cats...</h2>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:5000/cats";
+      const gallery = document.getElementById("cat-gallery");
+
+      // Store all cats data for filtering
+      let allCatsData = [];
+
+      // --- FETCH (GET) ---
+      async function fetchCats() {
+        try {
+          gallery.innerHTML = "<h2>Loading Cats...</h2>";
+          const response = await fetch(API_URL);
+          const cats = await response.json();
+          allCatsData = cats; // Store for filtering
+          populateColorFilter(cats);
+          renderCats(cats);
+          updateResultsCount(cats.length, cats.length);
+        } catch (error) {
+          console.error("Error fetching cats:", error);
+          gallery.innerHTML =
+            "<h2>Error loading cats. Is the backend running?</h2>";
+        }
+      }
+
+      // --- SEARCH AND FILTER ---
+      function populateColorFilter(cats) {
+        const colorFilter = document.getElementById("color-filter");
+        const colors = [
+          ...new Set(cats.map((cat) => cat.color).filter(Boolean)),
+        ];
+
+        // Keep "All Colors" option and add unique colors
+        colorFilter.innerHTML = '<option value="">All Colors</option>';
+        colors.sort().forEach((color) => {
+          const option = document.createElement("option");
+          option.value = color;
+          option.textContent = color;
+          colorFilter.appendChild(option);
+        });
+      }
+
+      function applyFilters() {
+        const searchTerm = document
+          .getElementById("search-input")
+          .value.toLowerCase()
+          .trim();
+        const selectedColor = document.getElementById("color-filter").value;
+
+        let filteredCats = allCatsData;
+
+        // Filter by search term (matches type_name/breed)
+        if (searchTerm) {
+          filteredCats = filteredCats.filter((cat) =>
+            (cat.type_name || "").toLowerCase().includes(searchTerm)
+          );
+        }
+
+        // Filter by color
+        if (selectedColor) {
+          filteredCats = filteredCats.filter(
+            (cat) => cat.color === selectedColor
+          );
+        }
+
+        renderCats(filteredCats);
+        updateResultsCount(filteredCats.length, allCatsData.length);
+      }
+
+      function clearFilters() {
+        document.getElementById("search-input").value = "";
+        document.getElementById("color-filter").value = "";
+        renderCats(allCatsData);
+        updateResultsCount(allCatsData.length, allCatsData.length);
+      }
+
+      function updateResultsCount(shown, total) {
+        const resultsDiv = document.getElementById("results-count");
+        if (shown === total) {
+          resultsDiv.textContent = `Showing all ${total} cats`;
+        } else {
+          resultsDiv.textContent = `Showing ${shown} of ${total} cats`;
+        }
+      }
+
+      function renderCats(cats) {
+        gallery.innerHTML = "";
+        if (cats.length === 0) {
+          gallery.innerHTML = "<h2>No cats found. Add one!</h2>";
+          return;
+        }
+
+        cats.forEach((cat) => {
+          const card = document.createElement("div");
+          card.className = "cat-card";
+          card.setAttribute("data-id", cat.id);
+
+          // Use a default image if image_url is missing or null
+          const imageUrl =
+            cat.image_url ||
+            "https://via.placeholder.com/250x200?text=No+Image";
+
+          // Escape single quotes for onclick attributes
+          const escapedTypeName = (cat.type_name || "").replace(/'/g, "\\'");
+          const escapedColor = (cat.color || "").replace(/'/g, "\\'");
+          const escapedImageUrl = (cat.image_url || "").replace(/'/g, "\\'");
+
+          card.innerHTML = `
+            <img src="${imageUrl}" alt="${cat.type_name}">
+            <div class="cat-info">
+              <h3>${cat.type_name}</h3>
+              <p><strong>ID:</strong> ${cat.id}</p>
+              <p><strong>Color:</strong> ${cat.color}</p>
+              <div class="actions">
+                <button class="edit-btn" onclick="startEdit(${cat.id}, '${escapedTypeName}', '${escapedColor}', '${escapedImageUrl}')">Edit</button>
+                <button class="delete-btn" onclick="deleteCat(${cat.id})">Delete</button>
+              </div>
+            </div>
+          `;
+          gallery.appendChild(card);
+        });
+      }
+
+      // --- ADD (POST) ---
+      async function addCat() {
+        const type_name = document.getElementById("new_type_name").value;
+        const color = document.getElementById("new_color").value;
+        const image_url = document.getElementById("new_image_url").value;
+
+        if (!type_name || !color || !image_url) {
+          alert("All fields must be filled out to add a new cat.");
+          return;
+        }
+
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type_name, color, image_url }),
+          });
+
+          if (response.ok) {
+            // Clear the form and refresh the gallery
+            document.getElementById("new_type_name").value = "";
+            document.getElementById("new_color").value = "";
+            document.getElementById("new_image_url").value = "";
+            fetchCats();
+            alert("Cat added successfully!");
+          } else {
+            const errorData = await response.json();
+            alert("Failed to add cat: " + errorData.error);
+          }
+        } catch (error) {
+          console.error("Error adding cat:", error);
+          alert("Could not connect to the API to add the cat.");
+        }
+      }
+
+      // --- DELETE ---
+      async function deleteCat(id) {
+        if (!confirm(`Are you sure you want to delete Cat ID: ${id}?`)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/${id}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            fetchCats(); // Refresh the gallery
+            alert(`Cat ID ${id} deleted.`);
+          } else {
+            const errorData = await response.json();
+            alert("Failed to delete cat: " + errorData.error);
+          }
+        } catch (error) {
+          console.error("Error deleting cat:", error);
+          alert("Could not connect to the API to delete the cat.");
+        }
+      }
+
+      // --- EDIT (PUT) Logic ---
+
+      // Start editing - populate the form with cat data
+      function startEdit(id, typeName, color, imageUrl) {
+        // Populate the form fields
+        document.getElementById("edit_cat_id").value = id;
+        document.getElementById("new_type_name").value = typeName;
+        document.getElementById("new_color").value = color;
+        document.getElementById("new_image_url").value = imageUrl;
+
+        // Change form to Edit mode
+        document.getElementById("form-title").textContent =
+          "Edit Cat (ID: " + id + ")";
+        document.getElementById("form-submit-btn").textContent = "Update Cat";
+        document.getElementById("form-submit-btn").style.backgroundColor =
+          "#fca311";
+        document.getElementById("cancel-edit-btn").style.display =
+          "inline-block";
+
+        // Scroll to the form
+        document
+          .getElementById("add-form-container")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Cancel editing - reset form to Add mode
+      function cancelEdit() {
+        document.getElementById("edit_cat_id").value = "";
+        document.getElementById("new_type_name").value = "";
+        document.getElementById("new_color").value = "";
+        document.getElementById("new_image_url").value = "";
+
+        // Change form back to Add mode
+        document.getElementById("form-title").textContent = "Add New Cat";
+        document.getElementById("form-submit-btn").textContent = "Add Cat";
+        document.getElementById("form-submit-btn").style.backgroundColor =
+          "#1a73e8";
+        document.getElementById("cancel-edit-btn").style.display = "none";
+      }
+
+      // Handle form submission - either add or update
+      function handleFormSubmit() {
+        const editId = document.getElementById("edit_cat_id").value;
+        if (editId) {
+          updateCat(editId);
+        } else {
+          addCat();
+        }
+      }
+
+      // Update an existing cat
+      async function updateCat(id) {
+        const type_name = document.getElementById("new_type_name").value;
+        const color = document.getElementById("new_color").value;
+        const image_url = document.getElementById("new_image_url").value;
+
+        if (!type_name || !color || !image_url) {
+          alert("All fields must be filled out to update the cat.");
+          return;
+        }
+
+        const updates = { type_name, color, image_url };
+
+        try {
+          const response = await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates),
+          });
+
+          if (response.ok) {
+            cancelEdit(); // Reset form to Add mode
+            fetchCats(); // Refresh the gallery
+            alert(`Cat ID ${id} updated successfully!`);
+          } else {
+            const errorData = await response.json();
+            alert("Failed to update cat: " + errorData.error);
+          }
+        } catch (error) {
+          console.error("Error updating cat:", error);
+          alert("Could not connect to the API to update the cat.");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", fetchCats);
+    </script>
+  </body>
+</html>
