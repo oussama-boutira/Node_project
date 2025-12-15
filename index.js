@@ -10,8 +10,8 @@ const post = "5000";
 // Enable CORS for all origins (allowing frontend to connect)
 app.use(cors());
 
-// Serve static files from the current directory
-app.use(express.static(path.join(__dirname)));
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
