@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cat CRUD Gallery</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Cat Gallery (CRUD Demo)</h1>
+
+      <!-- Add Cat Button -->
+      <div style="text-align: center; margin-bottom: 20px">
+        <button
+          onclick="openFormModal('add')"
+          style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+          "
+          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';"
+          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';"
+        >
+          ➕ Add New Cat
+        </button>
+      </div>
+
+      <!-- Search and Filter Section -->
+      <div class="search-filter-container">
+        <h3>🔎 Search & Filter Cats</h3>
+        <div class="search-filter-wrapper">
+          <div class="search-box">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search by name or breed..."
+              oninput="applyFilters()"
+            />
+          </div>
+          <div class="filter-box">
+            <select id="color-filter" onchange="applyFilters()">
+              <option value="">All Colors</option>
+            </select>
+          </div>
+          <button class="clear-filters-btn" onclick="clearFilters()">
+            Clear Filters
+          </button>
+        </div>
+        <div class="results-count" id="results-count"></div>
+      </div>
+
+      <div class="gallery" id="cat-gallery">
+        <h2>Loading Cats...</h2>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div
+        class="pagination-container"
+        id="pagination-container"
+        style="display: none"
+      >
+        <div class="page-size-selector">
+          <label for="page-size">Items per page:</label>
+          <select id="page-size" onchange="changePageSize()">
+            <option value="6">6</option>
+            <option value="9">9</option>
+            <option value="12" selected>12</option>
+            <option value="18">18</option>
+            <option value="24">24</option>
+          </select>
+        </div>
+        <div class="pagination-info" id="pagination-info"></div>
+        <div class="pagination-controls" id="pagination-controls"></div>
+      </div>
+
+      <!-- Alert/Confirm Modal Structure -->
+      <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-header" id="modal-header">
+            <span class="modal-icon" id="modal-icon"></span>
+            <h2 class="modal-title" id="modal-title"></h2>
+          </div>
+          <div class="modal-body" id="modal-body"></div>
+          <div class="modal-footer" id="modal-footer"></div>
+        </div>
+      </div>
+
+      <!-- Form Modal Structure -->
+      <div class="form-modal-overlay" id="form-modal-overlay">
+        <div class="form-modal-container">
+          <div class="form-modal-header">
+            <h2 id="form-modal-title">Add New Cat</h2>
+          </div>
+          <div class="form-modal-body">
+            <input type="hidden" id="edit_cat_id" value="" />
+            <div class="form-group">
+              <label for="new_type_name">Type/Breed</label>
+              <input
+                type="text"
+                id="new_type_name"
+                placeholder="e.g., Persian, Siamese"
+              />
+            </div>
+            <div class="form-group">
+              <label for="new_color">Color</label>
+              <input
+                type="text"
+                id="new_color"
+                placeholder="e.g., White, Black, Orange"
+              />
+            </div>
+            <div class="form-group">
+              <label for="new_image_url">Image URL</label>
+              <input
+                type="text"
+                id="new_image_url"
+                placeholder="https://example.com/cat.jpg"
+              />
+            </div>
+          </div>
+          <div class="form-modal-footer">
+            <button class="form-btn form-btn-cancel" onclick="closeFormModal()">
+              Cancel
+            </button>
+            <button
+              class="form-btn form-btn-submit"
+              id="form-submit-btn"
+              onclick="handleFormSubmit()"
+            >
+              Add Cat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
