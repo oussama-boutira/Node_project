@@ -5,13 +5,14 @@ const cors = require("cors");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
-// JWT Secret - In production, use environment variable
-const JWT_SECRET = "cat_gallery_secret_key_2024";
-const JWT_EXPIRES_IN = "7d";
+// JWT Configuration from environment variables
+const JWT_SECRET = process.env.JWT_SECRET || "cat_gallery_secret_key_2024";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 // Enable CORS for all origins (allowing frontend to connect)
 app.use(cors());
@@ -22,16 +23,20 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
+// Database configuration from environment variables
 const pool = mysql.createPool({
-  host: "gateway01.eu-central-1.prod.aws.tidbcloud.com",
-  user: "22ZSWVgE2PDACPY.root",
-  password: "wYgITdZU39NtIVWx",
-  database: "test",
-  port: 4000,
-  ssl: {
-    minVersion: "TLSv1.2",
-    rejectUnauthorized: true,
-  },
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "root",
+  database: process.env.DB_NAME || "animales",
+  port: process.env.DB_PORT || 3306,
+  ssl:
+    process.env.DB_HOST && process.env.DB_HOST.includes("tidbcloud")
+      ? {
+          minVersion: "TLSv1.2",
+          rejectUnauthorized: true,
+        }
+      : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
