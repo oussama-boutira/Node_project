@@ -180,22 +180,153 @@ function closeFormModal() {
   overlay.classList.remove("active");
 }
 
-const API_URL = "http://localhost:5000/cats";
+// ==================== AUTH STATE MANAGEMENT ====================
+
+const API_BASE = "http://localhost:5000";
+const API_URL = `${API_BASE}/cats`;
 const gallery = document.getElementById("cat-gallery");
+
+// Check if user is logged in
+function isLoggedIn() {
+  return !!localStorage.getItem("authToken");
+}
+
+// Get auth token
+function getAuthToken() {
+  return localStorage.getItem("authToken");
+}
+
+// Get current user
+function getCurrentUser() {
+  const userStr = localStorage.getItem("user");
+  return userStr ? JSON.parse(userStr) : null;
+}
+
+// Logout function
+function logout() {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("user");
+  window.location.reload();
+}
+
+// Get auth headers for API requests
+function getAuthHeaders() {
+  const token = getAuthToken();
+  if (token) {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  }
+  return { "Content-Type": "application/json" };
+}
+
+// Render navbar based on auth state
+function renderNavbar() {
+  const navMenu = document.getElementById("nav-menu");
+  if (!navMenu) return;
+
+  if (isLoggedIn()) {
+    const user = getCurrentUser();
+    const initial = user?.username?.charAt(0).toUpperCase() || "U";
+    navMenu.innerHTML = `
+      <div class="user-menu">
+        <div class="user-info">
+          <div class="user-avatar">${initial}</div>
+          <span class="user-name">${user?.username || "User"}</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    `;
+  } else {
+    navMenu.innerHTML = `
+      <a href="login.html" class="nav-btn nav-btn-outline">Login</a>
+      <a href="register.html" class="nav-btn nav-btn-primary">Register</a>
+    `;
+  }
+}
+
+// Update UI based on auth state
+function updateAuthUI() {
+  const heroAction = document.getElementById("hero-action");
+  const guestPrompt = document.getElementById("guest-prompt");
+
+  if (heroAction && guestPrompt) {
+    if (isLoggedIn()) {
+      heroAction.style.display = "block";
+      guestPrompt.style.display = "none";
+    } else {
+      heroAction.style.display = "none";
+      guestPrompt.style.display = "block";
+    }
+  }
+}
 
 // Store all cats data for filtering
 let allCatsData = [];
 
 // Pagination variables
 let currentPage = 1;
-let pageSize = 9;
+let pageSize = 8;
 let filteredCatsData = [];
 
 // --- FETCH (GET) ---
 async function fetchCats() {
+  // Check if user is logged in
+  if (!isLoggedIn()) {
+    gallery.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px;">
+        <div style="font-size: 5rem; margin-bottom: 20px;">🔒</div>
+        <h2 style="color: var(--text-primary); margin-bottom: 15px;">Login Required</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 25px;">Please login or register to view our adorable cat collection</p>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+          <a href="login.html" style="
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+          ">Login</a>
+          <a href="register.html" style="
+            padding: 14px 35px;
+            border: 2px solid #667eea;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+          ">Register</a>
+        </div>
+      </div>
+    `;
+    // Hide pagination and search for guests
+    document.getElementById("pagination-container").style.display = "none";
+    document.querySelector(".search-filter-container").style.display = "none";
+    return;
+  }
+
+  // Show search filter for logged-in users
+  document.querySelector(".search-filter-container").style.display = "block";
+
   try {
-    gallery.innerHTML = "<h2>Loading Cats...</h2>";
-    const response = await fetch(API_URL);
+    // Show skeleton loading cards
+    gallery.innerHTML = createSkeletonCards(6);
+
+    const response = await fetch(API_URL, {
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      // Token expired or invalid
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      window.location.reload();
+      return;
+    }
+
     const cats = await response.json();
     allCatsData = cats; // Store for filtering
     filteredCatsData = cats; // Initialize filtered data
@@ -203,8 +334,46 @@ async function fetchCats() {
     renderWithPagination();
   } catch (error) {
     console.error("Error fetching cats:", error);
-    gallery.innerHTML = "<h2>Error loading cats. Is the backend running?</h2>";
+    gallery.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+        <h2 style="color: #f5576c; margin-bottom: 10px;">Connection Error</h2>
+        <p style="color: var(--text-secondary);">Could not connect to the server. Is the backend running?</p>
+        <button onclick="fetchCats()" style="
+          margin-top: 20px;
+          padding: 12px 30px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 30px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+        ">🔄 Try Again</button>
+      </div>
+    `;
   }
+}
+
+// Create skeleton loading cards
+function createSkeletonCards(count) {
+  let skeletons = "";
+  for (let i = 0; i < count; i++) {
+    skeletons += `
+      <div class="cat-card" style="opacity: 0.7;">
+        <div class="skeleton" style="height: 220px;"></div>
+        <div style="padding: 22px;">
+          <div class="skeleton" style="height: 28px; width: 70%; margin-bottom: 12px;"></div>
+          <div class="skeleton" style="height: 18px; width: 40%; margin-bottom: 18px;"></div>
+          <div style="display: flex; gap: 10px;">
+            <div class="skeleton" style="height: 42px; flex: 1; border-radius: 16px;"></div>
+            <div class="skeleton" style="height: 42px; flex: 1; border-radius: 16px;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  return skeletons;
 }
 
 // --- SEARCH AND FILTER ---
@@ -386,38 +555,122 @@ function changePageSize() {
 function renderCats(cats) {
   gallery.innerHTML = "";
   if (cats.length === 0) {
-    gallery.innerHTML = "<h2>No cats found. Add one!</h2>";
+    gallery.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🐱</div>
+        <h2 style="color: var(--text-primary); margin-bottom: 10px;">No Cats Found</h2>
+        <p style="color: var(--text-secondary);">Add your first adorable cat to the gallery!</p>
+      </div>
+    `;
     return;
   }
 
-  cats.forEach((cat) => {
+  cats.forEach((cat, index) => {
     const card = document.createElement("div");
     card.className = "cat-card";
     card.setAttribute("data-id", cat.id);
+    card.style.animationDelay = `${index * 0.05}s`;
+    card.style.animation = "fadeInUp 0.5s ease forwards";
+    card.style.opacity = "0";
 
     // Use a default image if image_url is missing or null
     const imageUrl =
-      cat.image_url || "https://via.placeholder.com/250x200?text=No+Image";
+      cat.image_url ||
+      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop";
 
     // Escape single quotes for onclick attributes
     const escapedTypeName = (cat.type_name || "").replace(/'/g, "\\'");
     const escapedColor = (cat.color || "").replace(/'/g, "\\'");
     const escapedImageUrl = (cat.image_url || "").replace(/'/g, "\\'");
 
+    // Generate a color for the badge based on the cat's color
+    const colorBadgeStyle = getColorBadgeStyle(cat.color);
+
     card.innerHTML = `
-      <img src="${imageUrl}" alt="${cat.type_name}">
+      <div style="position: relative; overflow: hidden;">
+        <img src="${imageUrl}" alt="${cat.type_name}" loading="lazy" 
+             onerror="this.src='https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop'">
+        <span style="
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          backdrop-filter: blur(10px);
+          ${colorBadgeStyle}
+        ">${cat.color || "Unknown"}</span>
+      </div>
       <div class="cat-info">
-        <h3>${cat.type_name}</h3>
-        <p><strong>ID:</strong> ${cat.id}</p>
-        <p><strong>Color:</strong> ${cat.color}</p>
+        <h3>${cat.type_name || "Unknown Breed"}</h3>
+        <p><strong>ID:</strong> #${cat.id}</p>
+        <p><strong>Color:</strong> ${cat.color || "Unknown"}</p>
+        ${
+          isLoggedIn()
+            ? `
         <div class="actions">
           <button class="edit-btn" onclick="startEdit(${cat.id}, '${escapedTypeName}', '${escapedColor}', '${escapedImageUrl}')">Edit</button>
           <button class="delete-btn" onclick="deleteCat(${cat.id})">Delete</button>
         </div>
+        `
+            : ""
+        }
       </div>
     `;
     gallery.appendChild(card);
   });
+
+  // Add the fadeInUp animation style if not already present
+  if (!document.getElementById("card-animations")) {
+    const style = document.createElement("style");
+    style.id = "card-animations";
+    style.textContent = `
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// Helper function to generate color badge styles
+function getColorBadgeStyle(color) {
+  if (!color) return "background: rgba(100, 100, 100, 0.8); color: white;";
+
+  const colorLower = color.toLowerCase();
+  const colorMap = {
+    white: "background: rgba(255, 255, 255, 0.9); color: #333;",
+    black: "background: rgba(30, 30, 30, 0.9); color: white;",
+    orange:
+      "background: linear-gradient(135deg, #ff9a56, #ff6b35); color: white;",
+    gray: "background: rgba(128, 128, 128, 0.9); color: white;",
+    grey: "background: rgba(128, 128, 128, 0.9); color: white;",
+    brown:
+      "background: linear-gradient(135deg, #8B4513, #A0522D); color: white;",
+    ginger:
+      "background: linear-gradient(135deg, #ff8c42, #ff6b35); color: white;",
+    tabby:
+      "background: linear-gradient(135deg, #d4a574, #c4956a); color: white;",
+    calico:
+      "background: linear-gradient(135deg, #ff9a56, #ffd93d, #333); color: white;",
+    blue: "background: linear-gradient(135deg, #667eea, #764ba2); color: white;",
+  };
+
+  for (const [key, style] of Object.entries(colorMap)) {
+    if (colorLower.includes(key)) {
+      return style;
+    }
+  }
+
+  return "background: linear-gradient(135deg, #667eea, #764ba2); color: white;";
 }
 
 // --- ADD (POST) ---
@@ -435,10 +688,16 @@ async function addCat() {
     return;
   }
 
+  // Check if logged in
+  if (!isLoggedIn()) {
+    showModal("Please login to add cats.", "warning", "Login Required");
+    return;
+  }
+
   try {
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ type_name, color, image_url }),
     });
 
@@ -475,9 +734,16 @@ async function deleteCat(id) {
     return;
   }
 
+  // Check if logged in
+  if (!isLoggedIn()) {
+    showModal("Please login to delete cats.", "warning", "Login Required");
+    return;
+  }
+
   try {
     const response = await fetch(`${API_URL}/${id}`, {
       method: "DELETE",
+      headers: getAuthHeaders(),
     });
 
     if (response.ok) {
@@ -531,10 +797,16 @@ async function updateCat(id) {
 
   const updates = { type_name, color, image_url };
 
+  // Check if logged in
+  if (!isLoggedIn()) {
+    showModal("Please login to update cats.", "warning", "Login Required");
+    return;
+  }
+
   try {
     const response = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(updates),
     });
 
@@ -556,4 +828,8 @@ async function updateCat(id) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", fetchCats);
+document.addEventListener("DOMContentLoaded", () => {
+  renderNavbar();
+  updateAuthUI();
+  fetchCats();
+});
