@@ -182,8 +182,9 @@ function closeFormModal() {
 
 // ==================== AUTH STATE MANAGEMENT ====================
 
-const API_BASE = "http://localhost:5000";
-const API_URL = `${API_BASE}/cats`;
+// API URLs - use relative paths for Vercel deployment
+const API_BASE = "";
+const API_URL = "/cats";
 const gallery = document.getElementById("cat-gallery");
 
 // Check if user is logged in

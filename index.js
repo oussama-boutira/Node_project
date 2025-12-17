@@ -23,10 +23,15 @@ app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "root",
-  database: "animales",
+  host: "gateway01.eu-central-1.prod.aws.tidbcloud.com",
+  user: "22ZSWVgE2PDACPY.root",
+  password: "wYgITdZU39NtIVWx",
+  database: "test",
+  port: 4000,
+  ssl: {
+    minVersion: "TLSv1.2",
+    rejectUnauthorized: true,
+  },
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
