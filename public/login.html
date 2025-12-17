@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Login to Cat Gallery - Access your account"
+    />
+    <meta name="theme-color" content="#0d0d1a" />
+    <title>Login | Cat Gallery </title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>"
+    />
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <a href="index.html" class="auth-logo">🐱 Cat Gallery</a>
+          <h1>Welcome Back!</h1>
+          <p>Login to manage your cat collection</p>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="your@email.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <div class="form-error" id="form-error"></div>
+
+          <button type="submit" class="auth-submit-btn" id="submit-btn">
+            <span class="btn-text">Login</span>
+            <span class="btn-loader" style="display: none">⏳</span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          <p>
+            Don't have an account? <a href="register.html">Register here</a>
+          </p>
+          <a href="index.html" class="back-link">← Back to Gallery</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:5000";
+
+      // Check if already logged in
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        window.location.href = "index.html";
+      }
+
+      document
+        .getElementById("login-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const errorDiv = document.getElementById("form-error");
+          const submitBtn = document.getElementById("submit-btn");
+          const btnText = submitBtn.querySelector(".btn-text");
+          const btnLoader = submitBtn.querySelector(".btn-loader");
+
+          // Clear previous errors
+          errorDiv.textContent = "";
+          errorDiv.style.display = "none";
+
+          // Show loading state
+          btnText.style.display = "none";
+          btnLoader.style.display = "inline";
+          submitBtn.disabled = true;
+
+          try {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              // Save token and user info
+              localStorage.setItem("authToken", data.token);
+              localStorage.setItem("user", JSON.stringify(data.user));
+
+              // Redirect to gallery
+              window.location.href = "index.html";
+            } else {
+              errorDiv.textContent =
+                data.error || "Login failed. Please try again.";
+              errorDiv.style.display = "block";
+            }
+          } catch (error) {
+            console.error("Login error:", error);
+            errorDiv.textContent =
+              "Connection error. Please check if the server is running.";
+            errorDiv.style.display = "block";
+          } finally {
+            // Reset button
+            btnText.style.display = "inline";
+            btnLoader.style.display = "none";
+            submitBtn.disabled = false;
+          }
+        });
+    </script>
+  </body>
+</html>

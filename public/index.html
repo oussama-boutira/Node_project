@@ -3,39 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cat CRUD Gallery</title>
+    <meta
+      name="description"
+      content="A beautiful cat gallery with CRUD operations - Add, view, edit and delete your favorite cat entries"
+    />
+    <meta name="theme-color" content="#0d0d1a" />
+    <title>Cat Gallery</title>
     <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>"
+    />
   </head>
   <body>
     <div class="container">
-      <h1>Cat Gallery (CRUD Demo)</h1>
+      <!-- Navbar -->
+      <nav class="navbar">
+        <a href="index.html" class="nav-brand">🐱 Cat Gallery</a>
+        <div class="nav-menu" id="nav-menu">
+          <!-- Auth links will be injected by JS -->
+        </div>
+      </nav>
 
-      <!-- Add Cat Button -->
-      <div style="text-align: center; margin-bottom: 20px">
-        <button
-          onclick="openFormModal('add')"
-          style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
-          "
-          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)';"
-          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';"
-        >
-          ➕ Add New Cat
+      <!-- Hero Header -->
+      <header class="hero-header">
+        <h1>Cat Gallery</h1>
+        <p class="subtitle">
+          Discover and manage your purr-fect collection of adorable cats
+        </p>
+      </header>
+
+      <!-- Add Cat Button - Hero Style (shown only when logged in) -->
+      <div class="hero-action" id="hero-action" style="display: none">
+        <button class="add-cat-btn" onclick="openFormModal('add')">
+          <span class="icon">+</span>
+          Add New Cat
         </button>
+      </div>
+
+      <!-- Login prompt for guests -->
+      <div class="hero-action" id="guest-prompt" style="display: none">
+        <p style="color: var(--text-secondary); margin-bottom: 15px">
+          Login to add and manage cats
+        </p>
+        <a
+          href="login.html"
+          class="add-cat-btn"
+          style="text-decoration: none; display: inline-flex"
+        >
+          <span class="icon">→</span>
+          Login to Contribute
+        </a>
       </div>
 
       <!-- Search and Filter Section -->
       <div class="search-filter-container">
-        <h3>🔎 Search & Filter Cats</h3>
+        <h3>Search & Filter</h3>
         <div class="search-filter-wrapper">
           <div class="search-box">
             <input
@@ -51,12 +74,13 @@
             </select>
           </div>
           <button class="clear-filters-btn" onclick="clearFilters()">
-            Clear Filters
+            ✕ Clear Filters
           </button>
         </div>
         <div class="results-count" id="results-count"></div>
       </div>
 
+      <!-- Gallery Grid -->
       <div class="gallery" id="cat-gallery">
         <h2>Loading Cats...</h2>
       </div>
@@ -70,11 +94,10 @@
         <div class="page-size-selector">
           <label for="page-size">Items per page:</label>
           <select id="page-size" onchange="changePageSize()">
-            <option value="6">6</option>
-            <option value="9">9</option>
-            <option value="12" selected>12</option>
-            <option value="18">18</option>
-            <option value="24">24</option>
+            <option value="8" selected>8</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+            <option value="20">20</option>
           </select>
         </div>
         <div class="pagination-info" id="pagination-info"></div>
@@ -102,11 +125,11 @@
           <div class="form-modal-body">
             <input type="hidden" id="edit_cat_id" value="" />
             <div class="form-group">
-              <label for="new_type_name">Type/Breed</label>
+              <label for="new_type_name">Type / Breed</label>
               <input
                 type="text"
                 id="new_type_name"
-                placeholder="e.g., Persian, Siamese"
+                placeholder="e.g., Persian, Siamese, Maine Coon"
               />
             </div>
             <div class="form-group">
@@ -114,7 +137,7 @@
               <input
                 type="text"
                 id="new_color"
-                placeholder="e.g., White, Black, Orange"
+                placeholder="e.g., White, Black, Orange Tabby"
               />
             </div>
             <div class="form-group">
@@ -122,7 +145,7 @@
               <input
                 type="text"
                 id="new_image_url"
-                placeholder="https://example.com/cat.jpg"
+                placeholder="https://example.com/adorable-cat.jpg"
               />
             </div>
           </div>
