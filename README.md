@@ -32,7 +32,7 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Node_project.git
+git clone https://github.com/oussama-boutira/Node_project.git
 cd Node_project
 ```
 
@@ -68,37 +68,7 @@ CREATE TABLE cats (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
-
-### 4. Configure environment variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=animales
-DB_PORT=3306
-
-# JWT Configuration
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRES_IN=7d
-
-# Session Configuration
-SESSION_SECRET=your_session_secret_here
-
-# Server Port (optional)
-PORT=5000
-```
-
-> ⚠️ **Important**: Generate secure random secrets for `JWT_SECRET` and `SESSION_SECRET`:
->
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-> ```
-
-### 5. Start the server
+### 4. Start the server
 
 ```bash
 npm start
@@ -184,12 +154,3 @@ Node_project/
 
 ---
 
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
