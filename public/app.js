@@ -187,26 +187,74 @@ const API_BASE = "";
 const API_URL = "/cats";
 const gallery = document.getElementById("cat-gallery");
 
-// Check if user is logged in
+// ==================== COOKIE HELPERS ====================
+
+// Set a cookie
+function setCookie(name, value, days = 7) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+// Get a cookie
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const cookies = document.cookie.split(";");
+  for (let i = 0; i < cookies.length; i++) {
+    let c = cookies[i].trim();
+    if (c.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(c.substring(nameEQ.length));
+    }
+  }
+  return null;
+}
+
+// Delete a cookie
+function deleteCookie(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+}
+
+// ==================== AUTH FUNCTIONS ====================
+
+// Check if user is logged in (cookies are the primary source)
 function isLoggedIn() {
-  return !!localStorage.getItem("authToken");
+  const cookieToken = getCookie("authToken");
+  if (!cookieToken) {
+    // If no cookie, clear localStorage too (sync)
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    return false;
+  }
+  return true;
 }
 
-// Get auth token
+// Get auth token (cookies are the primary source)
 function getAuthToken() {
-  return localStorage.getItem("authToken");
+  return getCookie("authToken");
 }
 
-// Get current user
+// Get current user (cookies are the primary source)
 function getCurrentUser() {
-  const userStr = localStorage.getItem("user");
+  const userStr = getCookie("user");
   return userStr ? JSON.parse(userStr) : null;
 }
 
-// Logout function
+// Save auth data (to both localStorage and cookies)
+function saveAuthData(token, user) {
+  localStorage.setItem("authToken", token);
+  localStorage.setItem("user", JSON.stringify(user));
+  setCookie("authToken", token, 7);
+  setCookie("user", JSON.stringify(user), 7);
+}
+
+// Logout function (clear both localStorage and cookies)
 function logout() {
   localStorage.removeItem("authToken");
   localStorage.removeItem("user");
+  deleteCookie("authToken");
+  deleteCookie("user");
   window.location.reload();
 }
 
