@@ -230,8 +230,12 @@ function renderNavbar() {
   if (isLoggedIn()) {
     const user = getCurrentUser();
     const initial = user?.username?.charAt(0).toUpperCase() || "U";
+    const adoptedCount = adoptedCatIds.length;
     navMenu.innerHTML = `
       <div class="user-menu">
+        <button class="adopted-btn" onclick="openAdoptionModal()">
+          ❤️ Adopted (<span id="adopted-count">${adoptedCount}</span>)
+        </button>
         <div class="user-info">
           <div class="user-avatar">${initial}</div>
           <span class="user-name">${user?.username || "User"}</span>
@@ -270,6 +274,9 @@ let allCatsData = [];
 let currentPage = 1;
 let pageSize = 8;
 let filteredCatsData = [];
+
+// Adopted cats tracking
+let adoptedCatIds = [];
 
 // --- FETCH (GET) ---
 async function fetchCats() {
@@ -600,7 +607,7 @@ function renderCats(cats) {
           font-size: 0.8rem;
           font-weight: 600;
           backdrop-filter: blur(10px);
-          ${colorBadgeStyle}
+        ${colorBadgeStyle}
         ">${cat.color || "Unknown"}</span>
       </div>
       <div class="cat-info">
@@ -611,8 +618,17 @@ function renderCats(cats) {
           isLoggedIn()
             ? `
         <div class="actions">
-          <button class="edit-btn" onclick="startEdit(${cat.id}, '${escapedTypeName}', '${escapedColor}', '${escapedImageUrl}')">Edit</button>
-          <button class="delete-btn" onclick="deleteCat(${cat.id})">Delete</button>
+          ${
+            adoptedCatIds.includes(cat.id)
+              ? `<button class="adopt-btn adopted" onclick="unadoptCat(${cat.id})" title="Remove from adoptions">❤️ Adopted</button>`
+              : `<button class="adopt-btn" onclick="adoptCat(${cat.id})" title="Adopt this cat">🤍 Adopt</button>`
+          }
+          <button class="edit-btn" onclick="startEdit(${
+            cat.id
+          }, '${escapedTypeName}', '${escapedColor}', '${escapedImageUrl}')">Edit</button>
+          <button class="delete-btn" onclick="deleteCat(${
+            cat.id
+          })">Delete</button>
         </div>
         `
             : ""
@@ -829,7 +845,170 @@ async function updateCat(id) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// ==================== ADOPTION FUNCTIONS ====================
+
+// Fetch adopted cats from server session
+async function fetchAdoptedCats() {
+  if (!isLoggedIn()) {
+    adoptedCatIds = [];
+    return [];
+  }
+  try {
+    const response = await fetch("/api/adoptions", {
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    const data = await response.json();
+    adoptedCatIds = data.adoptedCats || [];
+    updateAdoptedCount();
+    return adoptedCatIds;
+  } catch (error) {
+    console.error("Error fetching adoptions:", error);
+    adoptedCatIds = [];
+    return [];
+  }
+}
+
+// Adopt a cat
+async function adoptCat(catId) {
+  try {
+    const response = await fetch(`/api/adoptions/${catId}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    const data = await response.json();
+    adoptedCatIds = data.adoptedCats || [];
+    updateAdoptedCount();
+    renderWithPagination(); // Re-render to update button state
+    showModal(`Cat adopted successfully! 🎉`, "success", "Adopted!");
+  } catch (error) {
+    console.error("Error adopting cat:", error);
+    showModal("Failed to adopt cat.", "error");
+  }
+}
+
+// Remove adoption
+async function unadoptCat(catId) {
+  try {
+    const response = await fetch(`/api/adoptions/${catId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    const data = await response.json();
+    adoptedCatIds = data.adoptedCats || [];
+    updateAdoptedCount();
+    renderWithPagination(); // Re-render to update button state
+  } catch (error) {
+    console.error("Error removing adoption:", error);
+    showModal("Failed to remove adoption.", "error");
+  }
+}
+
+// Update the adopted count in navbar
+function updateAdoptedCount() {
+  const countSpan = document.getElementById("adopted-count");
+  if (countSpan) {
+    countSpan.textContent = adoptedCatIds.length;
+  }
+}
+
+// Open adoption modal
+async function openAdoptionModal() {
+  const overlay = document.getElementById("adoption-modal-overlay");
+  const body = document.getElementById("adoption-modal-body");
+
+  overlay.classList.add("active");
+  body.innerHTML =
+    '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading adopted cats...</div>';
+
+  try {
+    const response = await fetch("/api/adoptions/cats", {
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    const data = await response.json();
+    renderAdoptedCats(data.cats || []);
+  } catch (error) {
+    console.error("Error fetching adopted cats:", error);
+    body.innerHTML =
+      '<div style="text-align: center; padding: 40px; color: #f5576c;">Failed to load adopted cats.</div>';
+  }
+
+  // Close on overlay click
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      closeAdoptionModal();
+    }
+  };
+
+  // Close on Escape key
+  const escHandler = (e) => {
+    if (e.key === "Escape") {
+      closeAdoptionModal();
+      document.removeEventListener("keydown", escHandler);
+    }
+  };
+  document.addEventListener("keydown", escHandler);
+}
+
+// Close adoption modal
+function closeAdoptionModal() {
+  const overlay = document.getElementById("adoption-modal-overlay");
+  overlay.classList.remove("active");
+}
+
+// Render adopted cats in modal
+function renderAdoptedCats(cats) {
+  const body = document.getElementById("adoption-modal-body");
+
+  if (cats.length === 0) {
+    body.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🐱</div>
+        <h3 style="color: var(--text-primary); margin-bottom: 10px;">No Adopted Cats Yet</h3>
+        <p style="color: var(--text-secondary);">Start adopting cats by clicking the "Adopt" button on any cat card!</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '<div class="adopted-cats-grid">';
+  cats.forEach((cat) => {
+    const imageUrl =
+      cat.image_url ||
+      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop";
+    html += `
+      <div class="adopted-cat-card">
+        <img src="${imageUrl}" alt="${cat.type_name}" 
+             onerror="this.src='https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=300&fit=crop'">
+        <div class="adopted-cat-info">
+          <h4>${cat.type_name || "Unknown Breed"}</h4>
+          <p>${cat.color || "Unknown color"}</p>
+          <button class="remove-adoption-btn" onclick="removeAdoptionFromModal(${
+            cat.id
+          })">
+            ✕ Remove
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  html += "</div>";
+  body.innerHTML = html;
+}
+
+// Remove adoption from modal
+async function removeAdoptionFromModal(catId) {
+  await unadoptCat(catId);
+  // Refresh the modal content
+  openAdoptionModal();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // Fetch adoptions first (before rendering navbar)
+  await fetchAdoptedCats();
   renderNavbar();
   updateAuthUI();
   fetchCats();
