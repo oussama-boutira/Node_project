@@ -67,8 +67,29 @@
     <script>
       const API_URL = "";
 
-      // Check if already logged in
-      const token = localStorage.getItem("authToken");
+      // Cookie helpers
+      function setCookie(name, value, days = 7) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${encodeURIComponent(
+          value
+        )};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+      }
+
+      function getCookie(name) {
+        const nameEQ = name + "=";
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          let c = cookies[i].trim();
+          if (c.indexOf(nameEQ) === 0) {
+            return decodeURIComponent(c.substring(nameEQ.length));
+          }
+        }
+        return null;
+      }
+
+      // Check if already logged in (check both localStorage and cookies)
+      const token = localStorage.getItem("authToken") || getCookie("authToken");
       if (token) {
         window.location.href = "index.html";
       }
@@ -104,9 +125,11 @@
             const data = await response.json();
 
             if (response.ok) {
-              // Save token and user info
+              // Save token and user info to both localStorage and cookies
               localStorage.setItem("authToken", data.token);
               localStorage.setItem("user", JSON.stringify(data.user));
+              setCookie("authToken", data.token, 7);
+              setCookie("user", JSON.stringify(data.user), 7);
 
               // Redirect to gallery
               window.location.href = "index.html";
