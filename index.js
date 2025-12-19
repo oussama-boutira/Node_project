@@ -402,72 +402,11 @@ app.put("/cats/:id", authenticateToken, (req, res) => {
   });
 });
 
-// ==================== ADOPTION ROUTES (SESSION-BASED, PER USER) ====================
+// ==================== ADOPTION ROUTES (DATABASE-BASED) ====================
 
-// Helper function to get user's adoptions from session
-function getUserAdoptions(session, userId) {
-  if (!session.adoptedCatsByUser) {
-    session.adoptedCatsByUser = {};
-  }
-  if (!session.adoptedCatsByUser[userId]) {
-    session.adoptedCatsByUser[userId] = [];
-  }
-  return session.adoptedCatsByUser[userId];
-}
-
-// Get all adopted cat IDs from session (for current user)
+// Get all adopted cat IDs for current user
 app.get("/api/adoptions", authenticateToken, (req, res) => {
   const userId = req.user.id;
-  const adoptedCats = getUserAdoptions(req.session, userId);
-  res.json({ adoptedCats });
-});
-
-// Add a cat to adoptions (for current user)
-app.post("/api/adoptions/:catId", authenticateToken, (req, res) => {
-  const catId = parseInt(req.params.catId);
-  const userId = req.user.id;
-
-  const userAdoptions = getUserAdoptions(req.session, userId);
-
-  if (!userAdoptions.includes(catId)) {
-    userAdoptions.push(catId);
-  }
-
-  res.json({
-    message: `Cat ${catId} adopted successfully!`,
-    adoptedCats: userAdoptions,
-  });
-});
-
-// Remove a cat from adoptions (for current user)
-app.delete("/api/adoptions/:catId", authenticateToken, (req, res) => {
-  const catId = parseInt(req.params.catId);
-  const userId = req.user.id;
-
-  if (!req.session.adoptedCatsByUser) {
-    req.session.adoptedCatsByUser = {};
-  }
-
-  if (req.session.adoptedCatsByUser[userId]) {
-    req.session.adoptedCatsByUser[userId] = req.session.adoptedCatsByUser[
-      userId
-    ].filter((id) => id !== catId);
-  }
-
-  res.json({
-    message: `Cat ${catId} removed from adoptions.`,
-    adoptedCats: getUserAdoptions(req.session, userId),
-  });
-});
-
-// Get full cat data for adopted cats (for current user)
-app.get("/api/adoptions/cats", authenticateToken, (req, res) => {
-  const userId = req.user.id;
-  const adoptedCatIds = getUserAdoptions(req.session, userId);
-
-  if (adoptedCatIds.length === 0) {
-    return res.json({ cats: [] });
-  }
 
   pool.getConnection((err, connection) => {
     if (err) {
@@ -475,10 +414,124 @@ app.get("/api/adoptions/cats", authenticateToken, (req, res) => {
       return res.status(500).json({ error: "DB connection error" });
     }
 
-    const placeholders = adoptedCatIds.map(() => "?").join(",");
     connection.query(
-      `SELECT * FROM cats WHERE id IN (${placeholders})`,
-      adoptedCatIds,
+      "SELECT cat_id FROM adoptions WHERE user_id = ?",
+      [userId],
+      (qErr, rows) => {
+        connection.release();
+        if (qErr) {
+          console.error("Query error:", qErr);
+          return res.status(500).json({ error: "Query error" });
+        }
+        const adoptedCats = rows.map((row) => row.cat_id);
+        res.json({ adoptedCats });
+      }
+    );
+  });
+});
+
+// Add a cat to adoptions
+app.post("/api/adoptions/:catId", authenticateToken, (req, res) => {
+  const catId = parseInt(req.params.catId);
+  const userId = req.user.id;
+
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error("DB connection error:", err);
+      return res.status(500).json({ error: "DB connection error" });
+    }
+
+    // Insert adoption (ignore if already exists)
+    connection.query(
+      "INSERT IGNORE INTO adoptions (user_id, cat_id) VALUES (?, ?)",
+      [userId, catId],
+      (insertErr) => {
+        if (insertErr) {
+          connection.release();
+          console.error("Insert error:", insertErr);
+          return res.status(500).json({ error: "Failed to adopt cat" });
+        }
+
+        // Get updated list
+        connection.query(
+          "SELECT cat_id FROM adoptions WHERE user_id = ?",
+          [userId],
+          (qErr, rows) => {
+            connection.release();
+            if (qErr) {
+              console.error("Query error:", qErr);
+              return res.status(500).json({ error: "Query error" });
+            }
+            const adoptedCats = rows.map((row) => row.cat_id);
+            res.json({
+              message: `Cat ${catId} adopted successfully!`,
+              adoptedCats,
+            });
+          }
+        );
+      }
+    );
+  });
+});
+
+// Remove a cat from adoptions
+app.delete("/api/adoptions/:catId", authenticateToken, (req, res) => {
+  const catId = parseInt(req.params.catId);
+  const userId = req.user.id;
+
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error("DB connection error:", err);
+      return res.status(500).json({ error: "DB connection error" });
+    }
+
+    connection.query(
+      "DELETE FROM adoptions WHERE user_id = ? AND cat_id = ?",
+      [userId, catId],
+      (deleteErr) => {
+        if (deleteErr) {
+          connection.release();
+          console.error("Delete error:", deleteErr);
+          return res.status(500).json({ error: "Failed to remove adoption" });
+        }
+
+        // Get updated list
+        connection.query(
+          "SELECT cat_id FROM adoptions WHERE user_id = ?",
+          [userId],
+          (qErr, rows) => {
+            connection.release();
+            if (qErr) {
+              console.error("Query error:", qErr);
+              return res.status(500).json({ error: "Query error" });
+            }
+            const adoptedCats = rows.map((row) => row.cat_id);
+            res.json({
+              message: `Cat ${catId} removed from adoptions.`,
+              adoptedCats,
+            });
+          }
+        );
+      }
+    );
+  });
+});
+
+// Get full cat data for adopted cats
+app.get("/api/adoptions/cats", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error("DB connection error:", err);
+      return res.status(500).json({ error: "DB connection error" });
+    }
+
+    connection.query(
+      `SELECT c.* FROM cats c 
+       INNER JOIN adoptions a ON c.id = a.cat_id 
+       WHERE a.user_id = ?`,
+      [userId],
       (qErr, rows) => {
         connection.release();
         if (qErr) {

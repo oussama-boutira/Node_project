@@ -10,7 +10,7 @@ A beautiful, modern cat gallery web application with CRUD operations, user authe
 
 - **User Authentication** - Register, login, and JWT-based session management
 - **Cat Gallery** - View, add, edit, and delete cat entries
-- **Cat Adoption** - Adopt cats with per-user session storage
+- **Cat Adoption** - Adopt cats with persistent database storage
 - **Search & Filter** - Find cats by name/breed and filter by color
 - **Pagination** - Navigate through large collections easily
 - **Modern UI** - Dark theme with glassmorphism design
@@ -67,7 +67,19 @@ CREATE TABLE cats (
   image_url VARCHAR(500),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Adoptions table
+CREATE TABLE adoptions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  cat_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (cat_id) REFERENCES cats(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_adoption (user_id, cat_id)
+);
 ```
+
 ### 4. Start the server
 
 ```bash
@@ -153,4 +165,3 @@ Node_project/
 6. View your **Adopted cats** by clicking the heart button in the navbar
 
 ---
-
