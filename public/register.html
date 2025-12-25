@@ -85,7 +85,6 @@
         </div>
       </div>
     </div>
-
     <script>
       const API_URL = "";
 
@@ -156,7 +155,7 @@
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok) {  
               // Save token and user info to both localStorage and cookies
               localStorage.setItem("authToken", data.token);
               localStorage.setItem("user", JSON.stringify(data.user));
